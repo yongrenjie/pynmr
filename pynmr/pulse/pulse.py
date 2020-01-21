@@ -126,10 +126,28 @@ def smoothing(smooth_percentage, points, type):
     return smoothfunc
 
 
-def writebruk(A, phi, path):
+def writebruk(l1, l2, path, form="polar", title="pynmr.pulse"):
+    """ Writes a pulse to Bruker-readable text file, which should be placed in
+    /path/to/TopSpin/exp/stan/nmr/lists/wave/user.
+    Pulse must be specified as a pair of lists l1 and l2.
+    If form is "polar", then l1 and l2 are assumed to be A and phi;
+    if form is "cart", then l1 and l2 are the x- and y-coefficients.
+    It is assumed that the rf amplitude of the pulse is already contained in l1 and l2,
+    i.e. l1 and l2 are not normalised to 1.
+    The title of the pulse can be optionally specified. """
+
+    if format == "polar":
+        A = l1
+        phi = l2
+        x, y = polar2cart(A, phi)
+    elif format == "cart":
+        x = l1
+        y = l2
+        A, phi = cart2polar(x, y)
+    else:
+        raise ValueError("write2bruk: form must be specified as either 'polar' or 'cart'.")
     max_amp = max(A)
     A = A * 100 / max_amp # scale so that maximum is 100
-    x, y = polar2cart(A, phi)
     xmax = np.amax(x)
     xmin = np.amin(x)
     ymax = np.amax(y)
@@ -139,7 +157,7 @@ def writebruk(A, phi, path):
     t = datetime.now()
 
     with open(path, 'w') as fid:
-        print("##TITLE= pulse-optimisation", file=fid)
+        print("##TITLE= {}".format(title), file=fid)
         print("##JCAMP-DX= 5.00 Bruker JCAMP library", file=fid)
         print("##DATA TYPE= Shape Data", file=fid)
         print("##ORIGIN= pynmr.pulse.writebruk()", file=fid)
@@ -151,23 +169,14 @@ def writebruk(A, phi, path):
         print("##MAXX= {}".format(xmax), file=fid)
         print("##MINY= {}".format(ymin), file=fid)
         print("##MAXY= {}".format(ymax), file=fid)
-        print("##$SHAPE_EXMODE= Adiabatic", file=fid)
-        print("##$SHAPE_TOTROT= 180", file=fid)
-        print("##$SHAPE_TYPE= Inversion", file=fid)
-        print("##$SHAPE_USER_DEF= 0", file=fid)
-        print("##$SHAPE_REPHFAC= 0", file=fid)
-        print("##$SHAPE_BWFAC= 0", file=fid)
-        print("##$SHAPE_BWFAC50= 0", file=fid)
-        print("##$SHAPE_INTEGFAC= 0", file=fid)
-        print("##$SHAPE_MODE= 0", file=fid)
         print("##NPOINTS= {}".format(len(A)), file=fid)
         print("##XYPOINTS= (XY..XY)", file=fid)
         print("", file=fid)
-
         mat = np.array([A, phi])
         np.savetxt(fid, np.transpose(mat), fmt="%.6f")
         print("##END=", file=fid)
 
-    scale = max_amp/100
-    # entire pulse needs to be multiplied by scale to regenerate the original amplitude
-    return scale
+    # max_amp is the rf amplitude of the pulse, which needs to be converted to TopSpin's SPW.
+    # A simple way to do this is to define the rf amplitude of the shaped pulse as cnstX in TopSpin,
+    # then use: spwX = plw1 * (cnstX / (1000000/(4*p1)))^2 
+    return max_amp

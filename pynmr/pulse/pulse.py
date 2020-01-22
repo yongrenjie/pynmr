@@ -136,11 +136,11 @@ def writebruk(l1, l2, path, form="polar", title="pynmr.pulse"):
     i.e. l1 and l2 are not normalised to 1.
     The title of the pulse can be optionally specified. """
 
-    if format == "polar":
+    if form == "polar":
         A = l1
         phi = l2
         x, y = polar2cart(A, phi)
-    elif format == "cart":
+    elif form == "cart":
         x = l1
         y = l2
         A, phi = cart2polar(x, y)

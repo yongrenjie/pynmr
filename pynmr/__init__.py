@@ -11,7 +11,7 @@ def readfid(path):
     fid = np.transpose(fid) # so now fid[0] is the real part, fid[1] the imaginary
     # TODO: Understand Bruker group delay
     return fid[0] + (1j * fid[1])
-    
+
 
 def read1d(path):
     path = str(path)
